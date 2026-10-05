@@ -1,0 +1,7 @@
+azure-functions~=2.3.0
+# True PDF redaction (text removed from the content stream) and full-rewrite
+# saves with garbage collection. AGPL-3.0 — accepted for this private,
+# internally used tool.
+pymupdf~=1.28.2
+# Second, independent text extractor for the residual-name verification.
+pypdf~=6.19.0

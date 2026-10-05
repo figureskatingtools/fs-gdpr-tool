@@ -1,0 +1,156 @@
+name: Deploy to Azure
+
+# Backend-only. The GDPR removal tool's frontend ships from the
+# figureskatingtools-site repo (served at /tools/gdpr/, which proxies
+# /tools/gdpr/api/* here), so this workflow deploys the Function App and its
+# host storage only.
+
+# Runner image is pinned on purpose. The ubuntu-latest label moves from Ubuntu
+# 24.04 to 26.04 between 2026-10-19 and 2026-11-19
+# (https://github.com/actions/runner-images/issues/14748), so an explicit label
+# keeps a -latest flip from changing the deploy OS under us mid-rollout.
+# Bump it deliberately: change every runs-on in this file together, dispatch
+# the workflow against the test environment first, then promote. Never set it
+# back to ubuntu-latest. Rollback label: ubuntu-24.04.
+
+on:
+  # Push to main auto-deploys prod. test is deployed only via manual dispatch
+  # (run the workflow from the branch whose code you want to deploy).
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        type: choice
+        options:
+          - test
+          - prod
+        default: test
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  set-environment:
+    name: Determine Environment
+    runs-on: ubuntu-26.04
+    outputs:
+      env_name: ${{ steps.set-env.outputs.env_name }}
+    steps:
+      - name: Set environment name
+        id: set-env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "env_name=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "env_name=prod" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy-infra:
+    name: Deploy Infrastructure
+    needs: set-environment
+    runs-on: ubuntu-26.04
+    environment: ${{ needs.set-environment.outputs.env_name }}
+    outputs:
+      function_app_name: ${{ steps.deploy.outputs.functionAppName }}
+      function_principal_id: ${{ steps.deploy.outputs.functionPrincipalId }}
+      storage_account_name: ${{ steps.deploy.outputs.storageAccountName }}
+      resource_group_name: ${{ steps.deploy.outputs.resourceGroupName }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep template
+        id: deploy
+        run: |
+          DEPLOYMENT_NAME="deploy-fs-gdpr-$(date +%s)"
+
+          OUTPUT=$(az deployment sub create \
+            --location "${{ vars.LOCATION }}" \
+            --template-file infra/main.bicep \
+            --name "$DEPLOYMENT_NAME" \
+            --parameters \
+              resourceGroupName="${{ vars.RESOURCE_GROUP_NAME }}" \
+              proxySharedSecret="${{ secrets.PROXY_SHARED_SECRET }}" \
+              allowedResultHosts="${{ vars.ALLOWED_RESULT_HOSTS }}" \
+              allowedUserEmails="${{ vars.ALLOWED_USER_EMAILS }}" \
+            --query 'properties.outputs' \
+            -o json)
+
+          echo "functionAppName=$(echo "$OUTPUT" | jq -r '.functionAppName.value')" >> "$GITHUB_OUTPUT"
+          echo "functionPrincipalId=$(echo "$OUTPUT" | jq -r '.functionPrincipalId.value')" >> "$GITHUB_OUTPUT"
+          echo "storageAccountName=$(echo "$OUTPUT" | jq -r '.storageAccountName.value')" >> "$GITHUB_OUTPUT"
+          echo "resourceGroupName=$(echo "$OUTPUT" | jq -r '.resourceGroupName.value')" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize deployment
+        run: |
+          {
+            echo "### GDPR removal tool backend"
+            echo ""
+            echo "- Function App: \`${{ steps.deploy.outputs.functionAppName }}\`"
+            echo "- Function App URL: \`https://${{ steps.deploy.outputs.functionAppName }}.azurewebsites.net\`"
+            echo ""
+            echo "Set the URL in the \`figureskatingtools-site\` repo's GitHub environment as"
+            echo "\`FUNCTION_APP_URL_GDPRTOOL\` and copy this environment's \`PROXY_SHARED_SECRET\`"
+            echo "there as \`PROXY_SHARED_SECRET_GDPRTOOL\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-backend:
+    name: Deploy Backend (Functions)
+    needs: [set-environment, deploy-infra]
+    runs-on: ubuntu-26.04
+    environment: ${{ needs.set-environment.outputs.env_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Run backend tests
+        run: |
+          cd infra/functions
+          pip install -r requirements-dev.txt
+          python -m pytest tests -q
+
+      - name: Build backend package
+        run: |
+          BUILD_DIR=$(mktemp -d)
+          cp -r infra/functions/* "$BUILD_DIR/"
+
+          cd "$BUILD_DIR"
+          rm -rf .venv __pycache__ .pytest_cache .git .vscode *.pyc local.settings.json
+          rm -rf tests requirements-dev.txt
+
+          mkdir -p .python_packages/lib/site-packages
+          pip install -r requirements.txt --only-binary=:all: --target .python_packages/lib/site-packages
+
+          zip -r "$GITHUB_WORKSPACE/backend.zip" .
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions
+        run: |
+          FUNC_APP_NAME="${{ needs.deploy-infra.outputs.function_app_name }}"
+          RESOURCE_GROUP="${{ needs.deploy-infra.outputs.resource_group_name }}"
+
+          az functionapp deployment source config-zip \
+            --src backend.zip \
+            --name "$FUNC_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP"

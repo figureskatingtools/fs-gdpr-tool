@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Never commit fetched or generated competition data
+*.zip
+/work/
+/out/
+gdpr-manifest.json
+
+# Build Artifacts
+backend_build/
+
+# Azure Functions
+local.settings.json
+.func/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

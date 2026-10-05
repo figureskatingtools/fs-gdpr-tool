@@ -1,0 +1,33 @@
+name: Tests
+
+# Runs the backend suite on every pull request and on pushes to `test`
+# (deploy.yml runs it again before every deploy, so a red suite blocks it).
+# Same pinned runner label as deploy.yml — bump both together.
+
+on:
+  pull_request:
+  push:
+    branches: [test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Run backend tests
+        run: |
+          cd infra/functions
+          pip install -r requirements-dev.txt
+          python -m pytest tests -q

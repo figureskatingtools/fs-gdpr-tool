@@ -1,0 +1,12 @@
+# Test dependencies: the runtime requirements plus pytest, an independent PDF
+# inspector (pikepdf/qpdf — so the checks do not only trust the library that
+# wrote the file) and reportlab + pillow to build the synthetic fixtures.
+#
+#   cd infra/functions
+#   python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+#   .venv/bin/python -m pytest tests -q
+-r requirements.txt
+pytest~=9.1
+pikepdf~=10.16
+reportlab~=5.0.1
+pillow~=12.3
