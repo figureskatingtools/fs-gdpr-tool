@@ -98,11 +98,22 @@ HTTP server.
 
 ## Deploy
 
-Same shape as the protocol generator: push to `main` → prod; `test` via manual
+Same shape as the protocol generator, with no long-lived `test` branch: branch
+from `main` → dispatch `deploy.yml` on that branch with `environment=test` → PR to
+`main` → merge → push to `main` deploys prod → the branch is auto-deleted on merge.
+`test` is a GitHub environment only and holds whichever branch was deployed last.
+The `prod` GitHub environment only accepts deployments from `main` (deployment
+branch policy — enforced, verified with a rejected dispatch from another branch).
+`.github/CODEOWNERS` (`* @mmaraa`) requests the owner's review on every PR, but the
+repo is private on the free plan, so GitHub offers no `main` ruleset / branch
+protection: "merge only reviewed, green PRs" is a convention here, unlike in the
+protocol generator.
+
+Push to `main` → prod; `test` via manual
 `workflow_dispatch`. Jobs: set-environment → deploy-infra (Bicep) → deploy-backend
 (pytest, then zip + `az functionapp deployment source config-zip`). `test.yml` runs the
-suite on PRs and pushes to `test`. All jobs pin `runs-on: ubuntu-26.04` (see the comment in
-`deploy.yml`; never `ubuntu-latest`). Dependabot targets `test`.
+suite on every PR. All jobs pin `runs-on: ubuntu-26.04` (see the comment in
+`deploy.yml`; never `ubuntu-latest`). Dependabot opens its PRs against `main`.
 
 Required GitHub environment config (`test`, `prod`): secrets `AZURE_CLIENT_ID`,
 `PROXY_SHARED_SECRET`; vars `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `LOCATION`,

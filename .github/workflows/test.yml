@@ -1,13 +1,11 @@
 name: Tests
 
-# Runs the backend suite on every pull request and on pushes to `test`
-# (deploy.yml runs it again before every deploy, so a red suite blocks it).
+# Runs the backend suite on every pull request, so a red suite shows up before
+# the merge (deploy.yml runs it again before every deploy, so it also blocks that).
 # Same pinned runner label as deploy.yml — bump both together.
 
 on:
   pull_request:
-  push:
-    branches: [test]
   workflow_dispatch:
 
 permissions:
