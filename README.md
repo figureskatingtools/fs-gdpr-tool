@@ -110,8 +110,15 @@ backend (`FUNCTION_APP_URL_GDPRTOOL=http://localhost:7071`).
 
 ## Deployment
 
-Pushing to `main` deploys prod via `.github/workflows/deploy.yml`; `test` is deployed by
-manual `workflow_dispatch`. The backend job runs the pytest suite before packaging, so a red
-suite blocks the deploy; `.github/workflows/test.yml` runs the suite on every pull request
-and push to `test`. Manual equivalents: `deploy_infra.sh`, `deploy_backend.sh`. See
-`CLAUDE.md` for details and the required GitHub environment configuration.
+There is no long-lived `test` branch; `test` and `prod` are GitHub environments.
+
+1. Branch from `main` and push the branch.
+2. Deploy it to test: run `.github/workflows/deploy.yml` manually (`workflow_dispatch`) on that
+   branch with `environment=test`. The `test` environment holds whichever branch was deployed last.
+3. Open a pull request to `main`. `.github/workflows/test.yml` runs the suite on every pull
+   request, and `.github/CODEOWNERS` requests the owner's review.
+4. Merge. The push to `main` deploys prod, and the branch is deleted on merge.
+
+Every deploy runs the pytest suite again before packaging, so a red suite also blocks it.
+Manual equivalents: `deploy_infra.sh`, `deploy_backend.sh`. See `CLAUDE.md` for details and the
+required GitHub environment configuration.
