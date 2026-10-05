@@ -1,3 +1,4 @@
-# Every change requests the owner's review. (This repo is private on the free
-# plan, so GitHub cannot *require* the review — no rulesets/branch protection.)
+# Every change needs the owner's review. The `main` ruleset requires code-owner
+# approval, so pull requests from anyone else (Dependabot included) wait for
+# @mmaraa; the owner's own PRs merge through the admin bypass.
 * @mmaraa
