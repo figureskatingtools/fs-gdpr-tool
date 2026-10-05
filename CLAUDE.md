@@ -104,10 +104,10 @@ from `main` → dispatch `deploy.yml` on that branch with `environment=test` →
 `test` is a GitHub environment only and holds whichever branch was deployed last.
 The `prod` GitHub environment only accepts deployments from `main` (deployment
 branch policy — enforced, verified with a rejected dispatch from another branch).
-`.github/CODEOWNERS` (`* @mmaraa`) requests the owner's review on every PR, but the
-repo is private on the free plan, so GitHub offers no `main` ruleset / branch
-protection: "merge only reviewed, green PRs" is a convention here, unlike in the
-protocol generator.
+`main` is guarded by a ruleset: PR required, code-owner review (`.github/CODEOWNERS`:
+`* @mmaraa`), squash only, the `Backend tests` check (`test.yml`, every PR) must pass,
+no force-push/deletion; repository admins can bypass, which is how the owner merges
+their own PRs.
 
 Push to `main` → prod; `test` via manual
 `workflow_dispatch`. Jobs: set-environment → deploy-infra (Bicep) → deploy-backend
@@ -124,5 +124,6 @@ Required GitHub environment config (`test`, `prod`): secrets `AZURE_CLIENT_ID`,
 
 Set the deploy summary's Function App URL in the site repo's matching environment as
 `FUNCTION_APP_URL_GDPRTOOL` and copy `PROXY_SHARED_SECRET` there as
-`PROXY_SHARED_SECRET_GDPRTOOL`. This repo is private, so it is **not** in the site's
-`changelog-sources.json`.
+`PROXY_SHARED_SECRET_GDPRTOOL`. The repo is public and listed in the site's
+`changelog-sources.json` ("GDPR Removal Tool"), so commit messages on `main` show up in
+the public "What's New" panel — keep them user-facing.
