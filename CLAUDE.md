@@ -8,7 +8,8 @@ Protocol Generator, and returns a ZIP of only the changed files.
 **This repo is backend-only.** The UI lives in the `figureskatingtools-site` repo under
 the nav's **Tools** dropdown (`SMALL_TOOLS`) at `/tools/gdpr/`; the site router handles
 the Entra login and proxies `/tools/gdpr/api/*` here with `x-proxy-secret` +
-`x-forwarded-user-email` (see **PROXY-CONTRACT.md**). No code is shared with the other
+`x-forwarded-user-tid` / `-oid` / `-email` (see **PROXY-CONTRACT.md**; the secret fails
+closed — an empty `PROXY_SHARED_SECRET` rejects everything, local dev included). No code is shared with the other
 tool repos — patterns are copied, not imported.
 
 **Never commit real names or real competition data** (fixtures, tests, commit messages,

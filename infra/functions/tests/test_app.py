@@ -97,13 +97,13 @@ def test_scan_rejects_hosts_not_on_allow_list(web):
     assert status == 400 and body["error"] == "host_not_allowed"
 
 
-def test_requests_without_identity_are_rejected(web, monkeypatch):
-    monkeypatch.setenv("PROXY_SHARED_SECRET", "s3cret")
-    status, _ = call("scan", {"eventUrl": fixtures.INDEX_URL})
+def test_requests_without_identity_are_rejected(web):
+    # The full proxy-auth matrix is in test_auth.py.
+    status, _ = call("scan", {"eventUrl": fixtures.INDEX_URL}, headers={"x-proxy-secret": None})
     assert status == 401
     status, _ = call("scan", {"eventUrl": fixtures.INDEX_URL}, headers={"x-proxy-secret": "wrong"})
     assert status == 401
-    status, _ = call("scan", {"eventUrl": fixtures.INDEX_URL}, headers={"x-proxy-secret": "s3cret"})
+    status, _ = call("scan", {"eventUrl": fixtures.INDEX_URL})
     assert status == 200
 
 
