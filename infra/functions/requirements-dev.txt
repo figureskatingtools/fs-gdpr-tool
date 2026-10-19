@@ -7,6 +7,6 @@
 #   .venv/bin/python -m pytest tests -q
 -r requirements.txt
 pytest~=9.1
-pikepdf~=10.16
+pikepdf~=10.17
 reportlab~=5.0.1
 pillow~=12.3
