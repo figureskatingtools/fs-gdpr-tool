@@ -12,11 +12,23 @@ import pytest
 
 import fixtures
 
+# What the site router sends with every proxied request (PROXY-CONTRACT.md).
+TEST_SECRET = "test-proxy-secret"
+TEST_TID = "11111111-2222-4333-8444-555555555555"
+TEST_OID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+TEST_EMAIL = "operator@example.com"
+ROUTER_HEADERS = {
+    "x-proxy-secret": TEST_SECRET,
+    "x-forwarded-user-tid": TEST_TID,
+    "x-forwarded-user-oid": TEST_OID,
+    "x-forwarded-user-email": TEST_EMAIL,
+}
+
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch, tmp_path):
     monkeypatch.setenv("ALLOWED_RESULT_HOSTS", fixtures.HOST)
-    monkeypatch.delenv("PROXY_SHARED_SECRET", raising=False)
+    monkeypatch.setenv("PROXY_SHARED_SECRET", TEST_SECRET)
     monkeypatch.delenv("ALLOWED_USER_EMAILS", raising=False)
     root = tmp_path / "work"
     root.mkdir()
@@ -57,9 +69,11 @@ def web(monkeypatch):
 
 
 def make_request(path, body=None, headers=None, method="POST"):
+    """A request as the router sends it; a header set to None in `headers` is left out."""
     import azure.functions as func
-    h = {"x-forwarded-user-email": "operator@example.com"}
+    h = dict(ROUTER_HEADERS)
     h.update(headers or {})
+    h = {k: v for k, v in h.items() if v is not None}
     return func.HttpRequest(method, "/api/" + path, headers=h,
                             body=json.dumps(body or {}).encode("utf-8"))
 

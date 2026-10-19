@@ -86,7 +86,8 @@ This repo holds the **backend only**. The user interface lives in
 [`figureskatingtools-site`](https://github.com/figureskatingtools/figureskatingtools-site)
 under the **Tools** menu at `https://figureskatingtools.com/tools/gdpr/`; that site's router
 does the Entra login and proxies `/tools/gdpr/api/*` to this Function App, adding
-`x-proxy-secret` and `x-forwarded-user-email` (see [PROXY-CONTRACT.md](PROXY-CONTRACT.md)).
+`x-proxy-secret` and the signed-in user's `x-forwarded-user-tid` / `-oid` / `-email`
+(see [PROXY-CONTRACT.md](PROXY-CONTRACT.md)).
 
 - **Backend** — Python 3.13 Azure Functions (`infra/functions/`): `pymupdf` (true PDF
   redaction), `pypdf` (second text extractor for verification), standard library for
