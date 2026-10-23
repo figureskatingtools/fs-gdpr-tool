@@ -123,3 +123,13 @@ There is no long-lived `test` branch; `test` and `prod` are GitHub environments.
 Every deploy runs the pytest suite again before packaging, so a red suite also blocks it.
 Manual equivalents: `deploy_infra.sh`, `deploy_backend.sh`. See `CLAUDE.md` for details and the
 required GitHub environment configuration.
+
+## Licence
+
+The source code is licensed under the GNU Affero General Public License, version 3 only (SPDX:
+`AGPL-3.0-only`); see [LICENSE](LICENSE).
+
+The figureskatingtools name, logo and document templates are not covered by this licence and
+remain the property of their owner; all rights reserved.
+
+PyMuPDF, which this tool uses, is itself licensed AGPL-3.0.
