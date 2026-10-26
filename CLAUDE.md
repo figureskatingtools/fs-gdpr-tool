@@ -24,7 +24,9 @@ structure, and only print masked output when inspecting them.
   second extractor in verification. Test-only: `pytest`, `pikepdf`, `reportlab`, `pillow`.
 - IaC: subscription-scoped Bicep (`infra/main.bicep`, `modules/{storage,function,roleassignment}.bicep`).
   Host storage only (`app-package` + runtime state), **no data container, no table, no
-  Application Insights**.
+  Application Insights** — so no log store either, and nothing for the platform's
+  90-day log retention to apply to. Keep it that way; a telemetry sink added later
+  needs a Log Analytics workspace with `retentionInDays: 90` like the other tools.
 
 ## Stateless request model (`function_app.py`)
 
