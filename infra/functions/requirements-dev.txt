@@ -6,7 +6,7 @@
 #   python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 #   .venv/bin/python -m pytest tests -q
 -r requirements.txt
-pytest~=9.1
+pytest~=9.2
 pikepdf~=10.17
 reportlab~=5.1.0
 pillow~=13.0
