@@ -4,4 +4,4 @@ azure-functions~=2.4.0
 # itself licensed under AGPL-3.0 (see LICENSE).
 pymupdf~=2.1.0
 # Second, independent text extractor for the residual-name verification.
-pypdf~=7.0.1
+pypdf~=7.1.1
